@@ -39,7 +39,6 @@ local localPlayer = Players.LocalPlayer
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local ws = WebSocket.connect("ws://192.168.1.71:8080")
 
-
 local function makeEverythingInvisible()
     -- Get all parts in the workspace
     local allParts = game.Workspace:GetDescendants()
@@ -125,6 +124,32 @@ local function printUserList()
     for userId, value in pairs(userList) do
         print(userId .. ": " .. value)
     end
+end
+
+local function isProtectedPlayer(userId)
+    for _, id in ipairs(getgenv().alts) do
+        if userId == id then
+            return true
+        end
+    end
+    for _, id in ipairs(getgenv().dont_kick) do
+        if userId == id then
+            return true
+        end
+    end
+    return false
+end
+
+local function vipKick(player)
+
+    if not isProtectedPlayer(player.UserId) then
+        game:GetService("ReplicatedStorage"):WaitForChild("MainEvent"):FireServer("VIP_CMD", "Kick", player)
+    end
+    
+end
+
+local function shout(message)
+    game:GetService("ReplicatedStorage"):WaitForChild("MainEvent"):FireServer("Shout", message)
 end
 
 
@@ -257,6 +282,9 @@ local function Track(user,amount,D_user_id,D_guild)
             ws:Send(updated2)
             local finished_M = string.format("%s %s %s", client_id, "BLOCK", user)
             ws:Send(finished_M)
+            shout("Please leave the game " .. user .. " or you will be kicked.")
+            wait(10)
+            vipKick(target)
             return true 
        else
             print("target left game")
@@ -324,19 +352,7 @@ local co1 = coroutine.create(function()
 end)
 coroutine.resume(co1)
 
-local function isProtectedPlayer(userId)
-    for _, id in ipairs(getgenv().alts) do
-        if userId == id then
-            return true
-        end
-    end
-    for _, id in ipairs(getgenv().dont_kick) do
-        if userId == id then
-            return true
-        end
-    end
-    return false
-end
+
 local function onPlayerAdded(player)
     if localPlayer.UserId == ps_owner then
         player.CharacterAdded:Wait()
@@ -352,9 +368,13 @@ local function onPlayerAdded(player)
         else
             if not isProtectedPlayer(player.UserId) then
                 print(player.Name, " is not in blocking them")
+                shout("Please leave the game " .. player.Name .. " or you will be kicked.")
                 wait(20)
                 local finished_L = string.format("%s %s %s", client_id, "BLOCK", player.Name)
                 ws:Send(finished_L)
+                wait(10)
+                target = game:GetService("Players"):FindFirstChild(player.Name)
+                vipKick(target)
             else
                 print("player is a admin not kicking")
             end
@@ -365,7 +385,7 @@ end
 Players.PlayerAdded:Connect(onPlayerAdded)
 settings().Rendering.QualityLevel = 1
 UserSettings().GameSettings.MasterVolume = 0
-setfpscap(2)
+setfpscap(5)
     
  
 
