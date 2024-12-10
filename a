@@ -1,4 +1,4 @@
-local monkey = 2
+local monkey = 1
 
 
 if monkey == 1 then
